@@ -1,0 +1,53 @@
+{
+  "name": "ocr-tools",
+  "private": true,
+  "version": "0.1.0",
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "description": "A lightweight desktop OCR tool for extracting text from images",
+  "author": {
+    "name": "OCR Tools",
+    "email": "support@ocrtools.com"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"vite\" \"cross-env NODE_ENV=development electron .\"",
+    "electron:build": "tsc -b && vite build && tsc -p tsconfig.electron.json && electron-builder",
+    "electron:build:win": "tsc -b && vite build && tsc -p tsconfig.electron.json && electron-builder --win",
+    "electron:build:mac": "tsc -b && vite build && tsc -p tsconfig.electron.json && electron-builder --mac",
+    "electron:build:linux": "tsc -b && vite build && tsc -p tsconfig.electron.json && electron-builder --linux"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tesseract.js": "^5.0.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.11.1",
+    "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-rpm": "^7.11.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
+    "@electron-forge/maker-zip": "^7.11.1",
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
+    "electron": "^41.0.3",
+    "electron-builder": "^26.8.1",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^4.0.0",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.5"
+  }
+}

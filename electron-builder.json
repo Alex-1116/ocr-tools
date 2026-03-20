@@ -1,0 +1,25 @@
+{
+  "appId": "com.ocrtools.app",
+  "productName": "OCR Tools",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "node_modules/**/*",
+    "package.json"
+  ],
+  "mac": {
+    "target": ["dmg", "zip"],
+    "icon": "public/vite.svg"
+  },
+  "win": {
+    "target": ["nsis", "zip"],
+    "icon": "public/vite.svg"
+  },
+  "linux": {
+    "target": ["deb", "rpm", "zip"],
+    "icon": "public/vite.svg"
+  }
+}
