@@ -5,9 +5,10 @@ interface ImageUploaderProps {
   image: string | null
   onImageSelected: (imageData: string) => void
   isRecognizing: boolean
+  onScreenshot?: () => void
 }
 
-function ImageUploader({ image, onImageSelected, isRecognizing }: ImageUploaderProps) {
+function ImageUploader({ image, onImageSelected, isRecognizing, onScreenshot }: ImageUploaderProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -62,7 +63,13 @@ function ImageUploader({ image, onImageSelected, isRecognizing }: ImageUploaderP
     }
   }, [handleFileSelect])
 
-  // 处理粘贴事件
+  const handleScreenshotClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isRecognizing && onScreenshot) {
+      onScreenshot()
+    }
+  }, [isRecognizing, onScreenshot])
+
   useEffect(() => {
     const handlePaste = async (e: ClipboardEvent) => {
       if (isRecognizing) return
@@ -81,7 +88,6 @@ function ImageUploader({ image, onImageSelected, isRecognizing }: ImageUploaderP
         }
       }
 
-      // 如果没有图片，尝试从剪贴板获取
       try {
         if (window.electronAPI) {
           const imageData = await window.electronAPI.getClipboardImage()
@@ -98,7 +104,6 @@ function ImageUploader({ image, onImageSelected, isRecognizing }: ImageUploaderP
     return () => window.removeEventListener('paste', handlePaste)
   }, [handleFileSelect, onImageSelected, isRecognizing])
 
-  // 处理从主进程选择图片
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === 'o') {
@@ -171,6 +176,21 @@ function ImageUploader({ image, onImageSelected, isRecognizing }: ImageUploaderP
           onChange={handleFileInputChange}
         />
       </div>
+
+      {onScreenshot && (
+        <button
+          className="screenshot-btn"
+          onClick={handleScreenshotClick}
+          disabled={isRecognizing}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          截图识别
+        </button>
+      )}
     </div>
   )
 }

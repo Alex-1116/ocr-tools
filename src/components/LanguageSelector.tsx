@@ -1,5 +1,5 @@
 import './LanguageSelector.css'
-import type { Language, LanguageOption } from '../App'
+import type { Language, LanguageOption } from '../constants/languages'
 
 interface LanguageSelectorProps {
   languages: LanguageOption[]

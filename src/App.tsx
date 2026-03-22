@@ -1,25 +1,10 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import * as Tesseract from 'tesseract.js'
 import ImageUploader from './components/ImageUploader'
 import ResultPanel from './components/ResultPanel'
 import LanguageSelector from './components/LanguageSelector'
+import { Language, LANGUAGES } from './constants/languages'
 import './App.css'
-
-export type Language = 'chi_sim' | 'chi_tra' | 'eng' | 'jpn' | 'kor' | 'chi_sim+eng'
-
-export interface LanguageOption {
-  value: Language
-  label: string
-}
-
-export const LANGUAGES: LanguageOption[] = [
-  { value: 'chi_sim', label: '中文简体' },
-  { value: 'chi_tra', label: '中文繁体' },
-  { value: 'eng', label: '英文' },
-  { value: 'jpn', label: '日文' },
-  { value: 'kor', label: '韩文' },
-  { value: 'chi_sim+eng', label: '中英混合' },
-]
 
 function App() {
   const [image, setImage] = useState<string | null>(null)
@@ -29,6 +14,7 @@ function App() {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('chi_sim')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [screenshotShortcut, setScreenshotShortcut] = useState('Ctrl+Shift+A')
   const workerRef = useRef<Tesseract.Worker | null>(null)
 
   const handleImageSelected = useCallback((imageData: string) => {
@@ -39,8 +25,9 @@ function App() {
     setProgress(0)
   }, [])
 
-  const handleRecognize = useCallback(async () => {
-    if (!image) {
+  const handleRecognize = useCallback(async (imageData?: string) => {
+    const imageToRecognize = imageData || image
+    if (!imageToRecognize) {
       setError('请先选择图片')
       return
     }
@@ -51,19 +38,18 @@ function App() {
     setProgress(0)
 
     try {
-      // 创建 worker 并配置选项
       const worker = await Tesseract.createWorker(
         selectedLanguage,
-        1, // LSTM_ONLY mode for better accuracy
+        1,
         {
           logger: (m: Tesseract.LoggerMessage) => {
             console.log('Tesseract:', m.status, m.progress)
             if (m.status === 'recognizing text') {
               setProgress(Math.round(m.progress * 100))
             } else if (m.status === 'loading language traineddata') {
-              setProgress(Math.round(m.progress * 30)) // 语言包加载占 30%
+              setProgress(Math.round(m.progress * 30))
             } else if (m.status === 'initializing api') {
-              setProgress(30 + Math.round(m.progress * 10)) // 初始化占 10%
+              setProgress(30 + Math.round(m.progress * 10))
             }
           },
           errorHandler: (err: Error) => {
@@ -74,11 +60,9 @@ function App() {
       )
       workerRef.current = worker
 
-      // 执行识别
-      const result = await worker.recognize(image)
+      const result = await worker.recognize(imageToRecognize)
       const text = result.data.text
 
-      // 终止 worker
       await worker.terminate()
       workerRef.current = null
 
@@ -98,6 +82,30 @@ function App() {
       setIsRecognizing(false)
     }
   }, [image, selectedLanguage])
+
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.getScreenshotShortcut().then((shortcut) => {
+        const displayShortcut = shortcut
+          .replace('CommandOrControl', 'Ctrl')
+          .replace(/\+/g, '+')
+        setScreenshotShortcut(displayShortcut)
+      })
+
+      const onScreenshotImage = (imageData: string) => {
+        handleImageSelected(imageData)
+        setTimeout(() => {
+          handleRecognize(imageData)
+        }, 100)
+      }
+
+      window.electronAPI.onScreenshotImage(onScreenshotImage)
+
+      return () => {
+        window.electronAPI.removeScreenshotListener()
+      }
+    }
+  }, [handleImageSelected, handleRecognize])
 
   const handleCancel = useCallback(async () => {
     if (workerRef.current) {
@@ -144,6 +152,27 @@ function App() {
     setProgress(0)
   }, [])
 
+  const handleScreenshot = useCallback(async () => {
+    if (window.electronAPI) {
+      await window.electronAPI.startScreenshot()
+    }
+  }, [])
+
+  const handleSaveScreenshot = useCallback(async () => {
+    if (image && window.electronAPI) {
+      try {
+        const savedPath = await window.electronAPI.saveScreenshot(image)
+        if (savedPath) {
+          setSuccess(`截图已保存: ${savedPath}`)
+          setTimeout(() => setSuccess(''), 3000)
+        }
+      } catch (err) {
+        console.error('保存截图失败:', err)
+        setError('保存截图失败')
+      }
+    }
+  }, [image])
+
   return (
     <div className="app">
       <header className="app-header">
@@ -157,6 +186,7 @@ function App() {
           <h1>OCR Tools</h1>
         </div>
         <p className="subtitle">轻量级图片文字识别工具</p>
+        <p className="shortcut-hint">截图快捷键: {screenshotShortcut}</p>
       </header>
 
       <main className="app-main">
@@ -171,7 +201,22 @@ function App() {
             image={image}
             onImageSelected={handleImageSelected}
             isRecognizing={isRecognizing}
+            onScreenshot={handleScreenshot}
           />
+          {image && (
+            <button
+              className="save-screenshot-btn"
+              onClick={handleSaveScreenshot}
+              disabled={isRecognizing}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              保存截图
+            </button>
+          )}
         </div>
 
         <div className="right-panel">
@@ -182,7 +227,7 @@ function App() {
             error={error}
             success={success}
             hasImage={!!image}
-            onRecognize={handleRecognize}
+            onRecognize={() => handleRecognize()}
             onCancel={handleCancel}
             onCopy={handleCopy}
             onSave={handleSave}
