@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import * as Tesseract from 'tesseract.js'
 import ImageUploader from './components/ImageUploader'
 import ResultPanel from './components/ResultPanel'
@@ -31,6 +31,14 @@ function App() {
   const [success, setSuccess] = useState('')
   const workerRef = useRef<Tesseract.Worker | null>(null)
 
+  // 处理截图
+  const handleScreenshot = useCallback(async () => {
+    if (window.electronAPI) {
+      await window.electronAPI.startScreenshot()
+    }
+  }, [])
+
+  // 处理图片选中（包括截图）
   const handleImageSelected = useCallback((imageData: string) => {
     setImage(imageData)
     setResult('')
@@ -38,6 +46,25 @@ function App() {
     setSuccess('')
     setProgress(0)
   }, [])
+
+  // 监听截图捕获事件
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.onScreenshotCaptured((imageData: string) => {
+        handleImageSelected(imageData)
+        // 自动开始识别
+        setTimeout(() => {
+          // 可以选择自动识别或者让用户点击
+        }, 100)
+      })
+    }
+
+    return () => {
+      if (window.electronAPI) {
+        window.electronAPI.removeScreenshotListener()
+      }
+    }
+  }, [handleImageSelected])
 
   const handleRecognize = useCallback(async () => {
     if (!image) {
@@ -144,6 +171,25 @@ function App() {
     setProgress(0)
   }, [])
 
+  // 保存截图到本地
+  const handleSaveScreenshot = useCallback(async () => {
+    if (image && window.electronAPI) {
+      try {
+        const now = new Date()
+        const fileName = `ocr-screenshot-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}.png`
+        
+        const saved = await window.electronAPI.saveScreenshot(image, fileName)
+        if (saved) {
+          setSuccess('截图已保存')
+          setTimeout(() => setSuccess(''), 2000)
+        }
+      } catch (err) {
+        console.error('保存截图失败:', err)
+        setError('保存截图失败')
+      }
+    }
+  }, [image])
+
   return (
     <div className="app">
       <header className="app-header">
@@ -171,6 +217,7 @@ function App() {
             image={image}
             onImageSelected={handleImageSelected}
             isRecognizing={isRecognizing}
+            onScreenshot={handleScreenshot}
           />
         </div>
 
@@ -188,6 +235,7 @@ function App() {
             onSave={handleSave}
             onClear={handleClear}
             onChange={setResult}
+            onSaveScreenshot={handleSaveScreenshot}
           />
         </div>
       </main>
