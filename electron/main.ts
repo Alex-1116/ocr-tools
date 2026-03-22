@@ -23,20 +23,41 @@ function createWindow() {
       allowRunningInsecureContent: true,
     },
     title: 'OCR 文字识别工具',
-    icon: path.join(__dirname, '../public/vite.svg'),
+    show: false,
   });
 
   console.log('NODE_ENV:', process.env.NODE_ENV);
   console.log('__dirname:', __dirname);
   
+  // 等待页面加载完成后再显示窗口
+  mainWindow.once('ready-to-show', () => {
+    console.log('Window is ready to show');
+    mainWindow?.show();
+  });
+
+  // 监听加载失败事件
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription);
+  });
+
+  // 监听控制台消息
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[Console ${level}] ${message} (${sourceId}:${line})`);
+  });
+
   if (process.env.NODE_ENV === 'development') {
-    console.log('Loading development URL:', 'http://localhost:5173');
-    mainWindow.loadURL('http://localhost:5173');
+    const devUrl = 'http://localhost:5177';
+    console.log('Loading development URL:', devUrl);
+    mainWindow.loadURL(devUrl).catch(err => {
+      console.error('Failed to load URL:', err);
+    });
     mainWindow.webContents.openDevTools();
   } else {
     const distPath = path.join(__dirname, '../dist/index.html');
     console.log('Loading production file:', distPath);
-    mainWindow.loadFile(distPath);
+    mainWindow.loadFile(distPath).catch(err => {
+      console.error('Failed to load file:', err);
+    });
   }
 
   mainWindow.on('closed', () => {
@@ -50,6 +71,7 @@ app.commandLine.appendSwitch('disable-software-rasterizer');
 app.commandLine.appendSwitch('disable-gpu-sandbox');
 
 app.whenReady().then(() => {
+  console.log('App is ready');
   createWindow();
 
   app.on('activate', () => {
