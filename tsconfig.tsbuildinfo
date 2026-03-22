@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/types/electron.d.ts"],"version":"5.6.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/components/imageuploader.tsx","./src/components/languageselector.tsx","./src/components/progressbar.tsx","./src/components/resultdisplay.tsx","./src/hooks/useocr.ts","./src/types/electron.d.ts","./src/types/index.ts"],"version":"5.6.3"}
