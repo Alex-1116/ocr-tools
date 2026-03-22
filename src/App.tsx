@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import * as Tesseract from 'tesseract.js'
 import ImageUploader from './components/ImageUploader'
 import ResultPanel from './components/ResultPanel'
 import LanguageSelector from './components/LanguageSelector'
+import SettingsPanel from './components/SettingsPanel'
 import './App.css'
 
 export type Language = 'chi_sim' | 'chi_tra' | 'eng' | 'jpn' | 'kor' | 'chi_sim+eng'
@@ -29,7 +30,35 @@ function App() {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('chi_sim')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [config, setConfig] = useState<{
+    screenshotShortcut: string
+    saveScreenshot: boolean
+    screenshotSavePath: string
+    autoRecognize: boolean
+  } | null>(null)
   const workerRef = useRef<Tesseract.Worker | null>(null)
+
+  // 加载配置
+  useEffect(() => {
+    window.electronAPI.getConfig().then(setConfig)
+  }, [])
+
+  // 监听来自截图窗口的消息
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'screenshot-result') {
+        setImage(event.data.image)
+        setResult(event.data.text)
+        setError('')
+        setSuccess('截图识别完成')
+        setTimeout(() => setSuccess(''), 2000)
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
 
   const handleImageSelected = useCallback((imageData: string) => {
     setImage(imageData)
@@ -144,6 +173,24 @@ function App() {
     setProgress(0)
   }, [])
 
+  const handleScreenshot = useCallback(async () => {
+    try {
+      // 隐藏主窗口并开始截图
+      await window.electronAPI.closeScreenshotWindow()
+    } catch {
+      // 忽略错误
+    }
+  }, [])
+
+  const formatShortcut = (shortcut: string) => {
+    return shortcut
+      .replace('CommandOrControl', 'Ctrl')
+      .replace('Command', '⌘')
+      .replace('Control', 'Ctrl')
+      .replace('Shift', 'Shift')
+      .replace('Alt', 'Alt')
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -155,6 +202,33 @@ function App() {
             <line x1="9" y1="15" x2="11" y2="15"/>
           </svg>
           <h1>OCR Tools</h1>
+        </div>
+        <div className="header-actions">
+          <button
+            className="screenshot-btn"
+            onClick={handleScreenshot}
+            title={`截图识别 (${config ? formatShortcut(config.screenshotShortcut) : 'Ctrl+Shift+A'})`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="M21 15l-5-5L5 21" />
+            </svg>
+            <span>截图识别</span>
+            <kbd className="shortcut-hint">
+              {config ? formatShortcut(config.screenshotShortcut) : 'Ctrl+Shift+A'}
+            </kbd>
+          </button>
+          <button
+            className="settings-btn"
+            onClick={() => setIsSettingsOpen(true)}
+            title="设置"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
+          </button>
         </div>
         <p className="subtitle">轻量级图片文字识别工具</p>
       </header>
@@ -191,6 +265,15 @@ function App() {
           />
         </div>
       </main>
+
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => {
+          setIsSettingsOpen(false)
+          // 刷新配置
+          window.electronAPI.getConfig().then(setConfig)
+        }}
+      />
     </div>
   )
 }
