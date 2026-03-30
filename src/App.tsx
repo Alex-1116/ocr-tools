@@ -1,8 +1,10 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import * as Tesseract from 'tesseract.js'
 import ImageUploader from './components/ImageUploader'
 import ResultPanel from './components/ResultPanel'
 import LanguageSelector from './components/LanguageSelector'
+import ScreenshotOverlay from './components/ScreenshotOverlay'
+import SettingsPanel from './components/SettingsPanel'
 import './App.css'
 
 export type Language = 'chi_sim' | 'chi_tra' | 'eng' | 'jpn' | 'kor' | 'chi_sim+eng'
@@ -21,6 +23,9 @@ export const LANGUAGES: LanguageOption[] = [
   { value: 'chi_sim+eng', label: '中英混合' },
 ]
 
+// 判断是否为截图模式
+const isScreenshotMode = window.location.hash === '#/screenshot'
+
 function App() {
   const [image, setImage] = useState<string | null>(null)
   const [result, setResult] = useState('')
@@ -29,7 +34,36 @@ function App() {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('chi_sim')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [autoRecognize, setAutoRecognize] = useState(true)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const workerRef = useRef<Tesseract.Worker | null>(null)
+
+  // 监听截图完成事件
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.onScreenshotCaptured((imageData: string) => {
+        handleImageSelected(imageData)
+      })
+
+      // 获取配置
+      window.electronAPI.getScreenshotConfig().then(config => {
+        setAutoRecognize(config.autoRecognize)
+      })
+    }
+
+    return () => {
+      if (window.electronAPI) {
+        window.electronAPI.removeScreenshotCapturedListener()
+      }
+    }
+  }, [])
+
+  // 自动识别（当图片改变且开启自动识别时）
+  useEffect(() => {
+    if (image && autoRecognize && !isRecognizing && !result) {
+      handleRecognize()
+    }
+  }, [image, autoRecognize])
 
   const handleImageSelected = useCallback((imageData: string) => {
     setImage(imageData)
@@ -109,30 +143,64 @@ function App() {
   }, [])
 
   const handleCopy = useCallback(async () => {
-    if (result && window.electronAPI) {
-      try {
-        await window.electronAPI.copyToClipboard(result)
+    if (!result) {
+      setError('没有可复制的内容')
+      return
+    }
+
+    try {
+      if (window.electronAPI) {
+        const success = await window.electronAPI.copyToClipboard(result)
+        if (success) {
+          setSuccess('已复制到剪贴板')
+          setTimeout(() => setSuccess(''), 2000)
+        } else {
+          setError('复制失败')
+        }
+      } else {
+        // 降级方案：使用浏览器 API
+        await navigator.clipboard.writeText(result)
         setSuccess('已复制到剪贴板')
         setTimeout(() => setSuccess(''), 2000)
-      } catch (err) {
-        console.error('复制失败:', err)
-        setError('复制失败')
       }
+    } catch (err) {
+      console.error('复制失败:', err)
+      setError('复制失败')
     }
   }, [result])
 
   const handleSave = useCallback(async () => {
-    if (result && window.electronAPI) {
-      try {
+    if (!result) {
+      setError('没有可保存的内容')
+      return
+    }
+
+    try {
+      if (window.electronAPI) {
         const saved = await window.electronAPI.saveToFile(result)
         if (saved) {
           setSuccess('保存成功')
           setTimeout(() => setSuccess(''), 2000)
+        } else {
+          setError('保存失败或已取消')
         }
-      } catch (err) {
-        console.error('保存失败:', err)
-        setError('保存失败')
+      } else {
+        // 降级方案：使用浏览器下载
+        const blob = new Blob([result], { type: 'text/plain;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'ocr-result.txt'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        setSuccess('保存成功')
+        setTimeout(() => setSuccess(''), 2000)
       }
+    } catch (err) {
+      console.error('保存失败:', err)
+      setError('保存失败')
     }
   }, [result])
 
@@ -143,6 +211,29 @@ function App() {
     setSuccess('')
     setProgress(0)
   }, [])
+
+  const handleScreenshot = useCallback(async () => {
+    if (window.electronAPI) {
+      try {
+        await window.electronAPI.captureScreen()
+      } catch (err) {
+        console.error('截图失败:', err)
+        setError('截图失败')
+      }
+    }
+  }, [])
+
+  const handleAutoRecognizeChange = useCallback(async (value: boolean) => {
+    setAutoRecognize(value)
+    if (window.electronAPI) {
+      await window.electronAPI.saveScreenshotConfig({ autoRecognize: value })
+    }
+  }, [])
+
+  // 截图模式直接返回遮罩层
+  if (isScreenshotMode) {
+    return <ScreenshotOverlay />
+  }
 
   return (
     <div className="app">
@@ -156,7 +247,19 @@ function App() {
           </svg>
           <h1>OCR Tools</h1>
         </div>
-        <p className="subtitle">轻量级图片文字识别工具</p>
+        <div className="header-actions">
+          <p className="subtitle">轻量级图片文字识别工具</p>
+          <button 
+            className="settings-btn"
+            onClick={() => setIsSettingsOpen(true)}
+            title="设置"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
       </header>
 
       <main className="app-main">
@@ -172,6 +275,35 @@ function App() {
             onImageSelected={handleImageSelected}
             isRecognizing={isRecognizing}
           />
+          
+          {/* 截图功能区域 */}
+          <div className="screenshot-section">
+            <h3>截图识别</h3>
+            <div className="screenshot-actions">
+              <button
+                className="screenshot-btn"
+                onClick={handleScreenshot}
+                disabled={isRecognizing}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="9" y1="3" x2="9" y2="21"/>
+                  <line x1="15" y1="3" x2="15" y2="21"/>
+                  <line x1="3" y1="9" x2="21" y2="9"/>
+                  <line x1="3" y1="15" x2="21" y2="15"/>
+                </svg>
+                <span>截图识别 (Ctrl+Shift+A)</span>
+              </button>
+            </div>
+            <label className="auto-recognize-toggle">
+              <input
+                type="checkbox"
+                checked={autoRecognize}
+                onChange={(e) => handleAutoRecognizeChange(e.target.checked)}
+              />
+              <span>截图后自动识别</span>
+            </label>
+          </div>
         </div>
 
         <div className="right-panel">
@@ -191,6 +323,12 @@ function App() {
           />
         </div>
       </main>
+
+      {/* 设置面板 */}
+      <SettingsPanel 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+      />
     </div>
   )
 }

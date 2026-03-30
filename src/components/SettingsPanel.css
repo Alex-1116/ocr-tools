@@ -1,0 +1,250 @@
+.settings-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.settings-panel {
+  background: white;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.settings-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+.close-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.settings-content {
+  padding: 24px;
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+.settings-loading {
+  padding: 40px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.setting-item {
+  margin-bottom: 24px;
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.shortcut-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.shortcut-option {
+  padding: 10px 8px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.shortcut-option:hover {
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+.shortcut-option.active {
+  border-color: #4f46e5;
+  background: #4f46e5;
+  color: white;
+}
+
+.setting-hint {
+  margin: 8px 0 0 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Toggle Switch */
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.setting-toggle input {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 48px;
+  height: 26px;
+  background: #e5e7eb;
+  border-radius: 13px;
+  transition: background 0.3s;
+  flex-shrink: 0;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.setting-toggle input:checked + .toggle-slider {
+  background: #4f46e5;
+}
+
+.setting-toggle input:checked + .toggle-slider::after {
+  transform: translateX(22px);
+}
+
+.toggle-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.settings-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.cancel-btn,
+.save-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-btn {
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #4b5563;
+}
+
+.cancel-btn:hover {
+  background: #f3f4f6;
+}
+
+.save-btn {
+  border: none;
+  background: #4f46e5;
+  color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-btn.saved {
+  background: #10b981;
+}
+
+.save-btn.error {
+  background: #ef4444;
+}
+
+@media (max-width: 480px) {
+  .shortcut-options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
