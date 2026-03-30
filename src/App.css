@@ -9,6 +9,7 @@
   text-align: center;
   margin-bottom: 24px;
   color: white;
+  position: relative;
 }
 
 .logo {
@@ -36,6 +37,76 @@
   opacity: 0.9;
 }
 
+.screenshot-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #4a9eff 0%, #3a8eef 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
+}
+
+.screenshot-btn:hover:not(:disabled) {
+  transform: translateY(-50%) scale(1.02);
+  box-shadow: 0 4px 12px rgba(74, 158, 255, 0.4);
+}
+
+.screenshot-btn:active:not(:disabled) {
+  transform: translateY(-50%) scale(0.98);
+}
+
+.screenshot-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.screenshot-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.settings-btn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.settings-btn:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.settings-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 .app-main {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -54,6 +125,34 @@
 }
 
 @media (max-width: 900px) {
+  .app-header {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .screenshot-btn,
+  .settings-btn {
+    position: static;
+    transform: none;
+    align-self: center;
+  }
+
+  .screenshot-btn:hover:not(:disabled),
+  .settings-btn:hover {
+    transform: scale(1.02);
+  }
+
+  .screenshot-btn:active:not(:disabled),
+  .settings-btn:active {
+    transform: scale(0.98);
+  }
+
+  .app-header > :nth-child(1) { order: 1; } /* logo */
+  .app-header > :nth-child(2) { order: 2; } /* subtitle */
+  .app-header > :nth-child(3) { order: 4; } /* settings-btn */
+  .app-header > :nth-child(4) { order: 3; } /* screenshot-btn */
+
   .app-main {
     grid-template-columns: 1fr;
   }
