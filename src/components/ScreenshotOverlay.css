@@ -1,0 +1,189 @@
+.screenshot-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  cursor: crosshair;
+  user-select: none;
+  overflow: hidden;
+  z-index: 99999;
+}
+
+.screenshot-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
+}
+
+.screenshot-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.screenshot-selection {
+  position: absolute;
+  border: 2px solid #4f46e5;
+  background: rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3);
+  z-index: 1;
+}
+
+.selection-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px dashed rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+}
+
+.selection-info {
+  position: absolute;
+  top: -28px;
+  left: 0;
+  background: #4f46e5;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #4f46e5;
+  background: white;
+  pointer-events: none;
+}
+
+.corner-tl {
+  top: -6px;
+  left: -6px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.corner-tr {
+  top: -6px;
+  right: -6px;
+  border-left: none;
+  border-bottom: none;
+}
+
+.corner-bl {
+  bottom: -6px;
+  left: -6px;
+  border-right: none;
+  border-top: none;
+}
+
+.corner-br {
+  bottom: -6px;
+  right: -6px;
+  border-left: none;
+  border-top: none;
+}
+
+.screenshot-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hint-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 32px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.hint-icon {
+  width: 48px;
+  height: 48px;
+  color: white;
+  opacity: 0.9;
+}
+
+.hint-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.hint-text {
+  text-align: center;
+  color: white;
+}
+
+.hint-text p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.hint-sub {
+  font-size: 13px !important;
+  opacity: 0.7;
+  margin-top: 4px !important;
+}
+
+.screenshot-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  z-index: 3;
+}
+
+.screenshot-loading p {
+  color: white;
+  font-size: 14px;
+  margin: 0;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 选区时的提示隐藏 */
+.screenshot-overlay:has(.screenshot-selection) .screenshot-hint {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
