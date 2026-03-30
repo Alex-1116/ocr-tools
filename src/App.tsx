@@ -1,8 +1,9 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import * as Tesseract from 'tesseract.js'
 import ImageUploader from './components/ImageUploader'
 import ResultPanel from './components/ResultPanel'
 import LanguageSelector from './components/LanguageSelector'
+import Settings from './components/Settings'
 import './App.css'
 
 export type Language = 'chi_sim' | 'chi_tra' | 'eng' | 'jpn' | 'kor' | 'chi_sim+eng'
@@ -29,7 +30,42 @@ function App() {
   const [selectedLanguage, setSelectedLanguage] = useState<Language>('chi_sim')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showSettings, setShowSettings] = useState(false)
+  const [currentShortcut, setCurrentShortcut] = useState('Ctrl/Cmd + Shift + A')
   const workerRef = useRef<Tesseract.Worker | null>(null)
+
+  useEffect(() => {
+    if (window.electronAPI) {
+      window.electronAPI.getSettings().then((settings) => {
+        const shortcutDisplay = settings.shortcut
+          .replace('CommandOrControl', 'Ctrl/Cmd')
+          .replace(/\+/g, ' + ')
+        setCurrentShortcut(shortcutDisplay)
+      })
+
+      window.electronAPI.onScreenshotCaptured((imageData: string) => {
+        setImage(imageData)
+        setResult('')
+        setError('')
+        setSuccess('')
+        setProgress(0)
+      })
+
+      window.electronAPI.onSettingsChanged((settings) => {
+        const shortcutDisplay = settings.shortcut
+          .replace('CommandOrControl', 'Ctrl/Cmd')
+          .replace(/\+/g, ' + ')
+        setCurrentShortcut(shortcutDisplay)
+      })
+    }
+
+    return () => {
+      if (window.electronAPI) {
+        window.electronAPI.removeScreenshotCapturedListener()
+        window.electronAPI.removeSettingsChangedListener()
+      }
+    }
+  }, [])
 
   const handleImageSelected = useCallback((imageData: string) => {
     setImage(imageData)
@@ -51,19 +87,18 @@ function App() {
     setProgress(0)
 
     try {
-      // 创建 worker 并配置选项
       const worker = await Tesseract.createWorker(
         selectedLanguage,
-        1, // LSTM_ONLY mode for better accuracy
+        1,
         {
           logger: (m: Tesseract.LoggerMessage) => {
             console.log('Tesseract:', m.status, m.progress)
             if (m.status === 'recognizing text') {
               setProgress(Math.round(m.progress * 100))
             } else if (m.status === 'loading language traineddata') {
-              setProgress(Math.round(m.progress * 30)) // 语言包加载占 30%
+              setProgress(Math.round(m.progress * 30))
             } else if (m.status === 'initializing api') {
-              setProgress(30 + Math.round(m.progress * 10)) // 初始化占 10%
+              setProgress(30 + Math.round(m.progress * 10))
             }
           },
           errorHandler: (err: Error) => {
@@ -74,11 +109,9 @@ function App() {
       )
       workerRef.current = worker
 
-      // 执行识别
       const result = await worker.recognize(image)
       const text = result.data.text
 
-      // 终止 worker
       await worker.terminate()
       workerRef.current = null
 
@@ -156,7 +189,19 @@ function App() {
           </svg>
           <h1>OCR Tools</h1>
         </div>
-        <p className="subtitle">轻量级图片文字识别工具</p>
+        <div className="header-actions">
+          <span className="shortcut-hint">截图快捷键: {currentShortcut}</span>
+          <button 
+            className="settings-btn"
+            onClick={() => setShowSettings(true)}
+            title="设置"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
       </header>
 
       <main className="app-main">
@@ -191,6 +236,10 @@ function App() {
           />
         </div>
       </main>
+
+      {showSettings && (
+        <Settings onClose={() => setShowSettings(false)} />
+      )}
     </div>
   )
 }

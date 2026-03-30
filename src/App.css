@@ -6,7 +6,9 @@
 }
 
 .app-header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 24px;
   color: white;
 }
@@ -14,9 +16,7 @@
 .logo {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 12px;
-  margin-bottom: 8px;
 }
 
 .logo svg {
@@ -34,6 +34,39 @@
 .subtitle {
   font-size: 14px;
   opacity: 0.9;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.shortcut-hint {
+  font-size: 12px;
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.settings-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 8px;
+  color: white;
+  transition: all 0.2s;
+}
+
+.settings-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.settings-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .app-main {
@@ -56,5 +89,16 @@
 @media (max-width: 900px) {
   .app-main {
     grid-template-columns: 1fr;
+  }
+  
+  .app-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .header-actions {
+    flex-direction: column;
+    gap: 8px;
   }
 }
