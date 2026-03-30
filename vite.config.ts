@@ -40,6 +40,22 @@ export default defineConfig({
           },
         },
       },
+      {
+        entry: 'electron/screenshot-preload.ts',
+        onstart(options) {
+          options.reload()
+        },
+        vite: {
+          build: {
+            sourcemap: true,
+            minify: false,
+            outDir: 'dist-electron',
+            rollupOptions: {
+              external: ['electron'],
+            },
+          },
+        },
+      },
     ]),
     renderer(),
   ],
@@ -51,5 +67,11 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        screenshot: resolve(__dirname, 'screenshot.html'),
+      },
+    },
   },
 })
